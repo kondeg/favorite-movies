@@ -1,10 +1,12 @@
-package demo.example.com.customarrayadapter;
+package edu.udacity.kondeg.movies;
 
 
 import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
 import android.view.Menu;
 import android.view.MenuItem;
+
+import demo.example.com.customarrayadapter.R;
 
 public class MainActivity extends ActionBarActivity {
 

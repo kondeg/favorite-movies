@@ -1,4 +1,4 @@
-package demo.example.com.customarrayadapter;
+package edu.udacity.kondeg.movies;
 
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
@@ -9,10 +9,14 @@ import android.widget.ListView;
 
 import java.util.Arrays;
 
+import demo.example.com.customarrayadapter.R;
+
 /**
  * A fragment containing the list view of Android versions.
  */
 public class MainActivityFragment extends Fragment {
+
+
 
     private AndroidFlavorAdapter flavorAdapter;
 

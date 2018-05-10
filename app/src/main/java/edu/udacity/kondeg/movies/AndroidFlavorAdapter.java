@@ -1,4 +1,4 @@
-package demo.example.com.customarrayadapter;
+package edu.udacity.kondeg.movies;
 
 import android.app.Activity;
 import android.view.LayoutInflater;
@@ -9,6 +9,8 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import java.util.List;
+
+import demo.example.com.customarrayadapter.R;
 
 public class AndroidFlavorAdapter extends ArrayAdapter<AndroidFlavor> {
     private static final String LOG_TAG = AndroidFlavorAdapter.class.getSimpleName();

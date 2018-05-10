@@ -1,4 +1,4 @@
-package demo.example.com.customarrayadapter;
+package edu.udacity.kondeg.movies;
 
 /**
  * Created by poornima-udacity on 6/26/15.
