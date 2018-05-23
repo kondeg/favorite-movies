@@ -1,11 +1,16 @@
 package edu.udacity.kondeg.movies;
 
+import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
@@ -23,6 +28,8 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 
 
@@ -39,23 +46,34 @@ public class MovieFragment extends Fragment {
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
     private static final String ARG_PARAM1 = "param1";
     private static final String ARG_PARAM2 = "param2";
+    private static final String SORT_POPULAR = "popular";
+    private static final String SORT_TOP = "top";
     private static final String LOG_TAG = MovieFragment.class.getSimpleName();
 
     // TODO: Rename and change types of parameters
     private String mParam1;
     private String mParam2;
 
-    private static final String API_KEY = "?api_key=738e339677ca170170d0bec66adf566a";
+    private static final String API_KEY = "";
     private static final String MOVIE_IMAGE_URI = "http://image.tmdb.org/t/p/";
-    private static final String MOVIE_API_URI = "http://api.themoviedb.org/3/movie/popular" ;
+    private static final String MOVIE_API_URI_POPULAR = "http://api.themoviedb.org/3/movie/popular" ;
+    private static final String MOVIE_API_URI_TOP = "http://api.themoviedb.org/3/movie/top_rated";
+    private String sortOrder = SORT_POPULAR;
 
-
-    private OnFragmentInteractionListener mListener;
+    private Activity mActivity;
     private GridView mGridView;
     private ArrayList<MovieTitle> movieTitles;
     private ArrayAdapter<MovieTitle> mMovieAdapter;
+    private OnChangeSortOrderListener mSortOrderListener;
+    private OnFragmentInteractionListener mListener;
 
     private String mScreenDensity ="w185";
+
+
+
+    public interface OnChangeSortOrderListener {
+        void onSortOrderChanged(String sortOrder);
+    }
 
     public MovieFragment() {
         // Required empty public constructor
@@ -88,32 +106,49 @@ public class MovieFragment extends Fragment {
         }
     }
 
+
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
+            super.onCreateView(inflater,container,savedInstanceState);
+            setHasOptionsMenu(true);
 
-        View view = inflater.inflate(R.layout.fragment_movie, container, false);
-        mGridView = (GridView) view.findViewById(R.id.gridMovieTitles);
+            View view = inflater.inflate(R.layout.fragment_movie, container, false);
+            mGridView = (GridView) view.findViewById(R.id.gridMovieTitles);
 
-        if (movieTitles==null) {
-            movieTitles = new ArrayList<>();
-        }
-
-        queryMovieDbApi();
-
-        mMovieAdapter = new MovieAdapter(getActivity(), movieTitles);
-
-        mGridView.setAdapter(mMovieAdapter);
-
-        mGridView.setOnItemClickListener(new AdapterView.OnItemClickListener(){
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                Toast.makeText(getActivity(), "Image " + position, Toast.LENGTH_LONG).show();
+            if (movieTitles == null) {
+                movieTitles = new ArrayList<>();
             }
-        });
+
+            queryMovieDbApi();
+
+            mMovieAdapter = new MovieAdapter(getActivity(), movieTitles);
+
+            mGridView.setAdapter(mMovieAdapter);
+
+            mGridView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                @Override
+                public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                    MovieTitle movieTitle = (MovieTitle) parent.getItemAtPosition(position);
+                    Intent intent = new Intent(mActivity, MovieDetailActivity.class);
+                    intent.putExtra(getResources().getString(R.string.parcel_movie), movieTitle);
+                    startActivity(intent);
+                }
+            });
+        
 
         return view;
+    }
+
+    private void notifySortOrderChanged(String sortOrder) {
+       mSortOrderListener.onSortOrderChanged(sortOrder);
+    }
+
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        super.onCreateOptionsMenu(menu, inflater);
     }
 
     // TODO: Rename method, update argument and hook method into UI event
@@ -126,11 +161,11 @@ public class MovieFragment extends Fragment {
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
-        if (context instanceof OnFragmentInteractionListener) {
-            mListener = (OnFragmentInteractionListener) context;
-        } else {
-            throw new RuntimeException(context.toString()
-                    + " must implement OnFragmentInteractionListener");
+        mActivity = (Activity) context;
+        if (mActivity instanceof OnFragmentInteractionListener) {
+            mListener = (OnFragmentInteractionListener) mActivity;}
+        if (mActivity instanceof OnChangeSortOrderListener) {
+            mSortOrderListener = (OnChangeSortOrderListener) mActivity;
         }
     }
 
@@ -155,10 +190,34 @@ public class MovieFragment extends Fragment {
         void onFragmentInteraction(Uri uri);
     }
 
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.show_by_popularity:
+                sortOrder = SORT_POPULAR;
+                queryMovieDbApi();
+                notifySortOrderChanged(SORT_POPULAR);
+                return true;
+
+            case R.id.show_by_rating:
+                sortOrder = SORT_TOP;
+                queryMovieDbApi();
+                notifySortOrderChanged(SORT_TOP);
+                return true;
+
+            default:
+                return super.onOptionsItemSelected(item);
+        }
+    }
+
 
     private void queryMovieDbApi() {
+        String apiUri = MOVIE_API_URI_POPULAR;
+        if (sortOrder!=null && sortOrder.equals(SORT_TOP)) {
+            apiUri = MOVIE_API_URI_TOP;
+        }
         final JsonObjectRequest mJsonObjectRequest = new JsonObjectRequest
-                (Request.Method.GET, MOVIE_API_URI+API_KEY, null, new Response.Listener<JSONObject>() {
+                (Request.Method.GET, apiUri+API_KEY, null, new Response.Listener<JSONObject>() {
                     @Override
                     public void onResponse(JSONObject response) {
                         try {
@@ -186,12 +245,19 @@ public class MovieFragment extends Fragment {
                                 releaseDate = movie.getString("release_date");
                                 poster_uri = movie.getString("poster_path");
                                 overview = movie.getString("overview");
+                                SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
+                                SimpleDateFormat simpleDateFormat2 = new SimpleDateFormat("MM/dd/yyyy");
+                                if (releaseDate!=null) {
+                                    try {
+                                        releaseDate = simpleDateFormat2.format(simpleDateFormat.parse(releaseDate));
+
+                                    } catch (ParseException e) {
+                                        Log.e(LOG_TAG, e.getMessage());
+                                    }
+                                }
                                 thumbnail = MOVIE_IMAGE_URI+mScreenDensity+poster_uri;
-                                movieTitles.add(new MovieTitle(title, releaseDate, id,
-                                        MOVIE_IMAGE_URI+mScreenDensity+poster_uri, overview, rating));
+                                movieTitles.add(new MovieTitle(title, releaseDate, id, thumbnail, overview, rating));
                             }
-
-
                             mMovieAdapter.notifyDataSetChanged();
 
                         } catch (JSONException ex) {

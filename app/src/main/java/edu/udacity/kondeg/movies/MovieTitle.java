@@ -50,7 +50,7 @@ public class MovieTitle implements Parcelable{
         this.voteAverage = in.readDouble();
     }
 
-    public final Parcelable.Creator<MovieTitle> CREATOR = new
+    public static final Parcelable.Creator<MovieTitle> CREATOR = new
             Parcelable.Creator<MovieTitle>() {
         @Override
         public MovieTitle createFromParcel(Parcel parcel) {
