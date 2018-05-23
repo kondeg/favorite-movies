@@ -21,7 +21,7 @@ import java.util.ArrayList;
 
 public class MovieActivity extends AppCompatActivity implements MovieFragment.OnFragmentInteractionListener{
 
-    private static final String API_KEY = "?api_key=738e339677ca170170d0bec66adf566a";
+    private static final String API_KEY = "";
     private static final String MOVIE_IMAGE_URI = "http://image.tmdb.org/t/p/";
     private static final String MOVIE_API_URI = "http://api.themoviedb.org/3/movie/popular" ;
     private static final String LOG_TAG = MovieActivity.class.getSimpleName();
