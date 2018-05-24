@@ -54,7 +54,7 @@ public class MovieFragment extends Fragment {
     private String mParam1;
     private String mParam2;
 
-    private static final String API_KEY = "";
+    private static final String API_KEY = "?api_key=";
     private static final String MOVIE_IMAGE_URI = "http://image.tmdb.org/t/p/";
     private static final String MOVIE_API_URI_POPULAR = "http://api.themoviedb.org/3/movie/popular" ;
     private static final String MOVIE_API_URI_TOP = "http://api.themoviedb.org/3/movie/top_rated";
