@@ -2,6 +2,7 @@ package edu.udacity.kondeg.movies;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.ColorStateList;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
@@ -70,6 +71,7 @@ public class MovieDetailFragment extends Fragment {
     private Executor executor = null;
     Boolean favorite = false;
     private MovieDatabase mDatabase;
+    private FloatingActionButton button = null;
 
     private OnFragmentInteractionListener mListener;
 
@@ -178,52 +180,67 @@ public class MovieDetailFragment extends Fragment {
                     startActivity(intent);
                 }
             });
+            button = view.findViewById(R.id.favbtn);
 
-            final FloatingActionButton button = (FloatingActionButton) view.findViewById(R.id.favbtn);
-            button.setOnClickListener(new View.OnClickListener() {
-                public void onClick(View v) {
-                    if (favorite) {
-                        executor.execute(new Runnable() {
-                            @Override
-                            public void run() {
-                                mDatabase.movieDao().delete(title);
-                            }
-                        });
-                        favorite = false;
-                        button.setBackgroundTintList(getContext().getResources().getColorStateList(R.color.offwhite));
-                        Toast.makeText(getActivity(), getResources().getText(R.string.removed_favorites), Toast.LENGTH_SHORT).show();
-                    } else {
-                        executor.execute(new Runnable() {
-                            @Override
-                            public void run() {
-                                mDatabase.movieDao().insert(title);
-                            }
-                        });
-                        favorite = true;
-                        button.setBackgroundTintList(getContext().getResources().getColorStateList(R.color.pink));
-                        Toast.makeText(getActivity(), getResources().getText(R.string.saved_favorites), Toast.LENGTH_SHORT).show();
-                    }
-                }
-            });
-
-            executor.execute(new Runnable() {
-                @Override
-                public void run() {
-                    MovieTitle dbTitle = mDatabase.movieDao().getMovieById(title.id);
-                    if (dbTitle != null) {
-                        favorite = true;
-                        button.setBackgroundTintList(getContext().getResources().getColorStateList(R.color.pink));
-                    } else {
-                        favorite = false;
-                        button.setBackgroundTintList(getContext().getResources().getColorStateList(R.color.offwhite));
-                    }
-                }
-            });
         }
 
         return view;
     }
 
+
+
+    @Override
+    public void onActivityCreated(Bundle savedInstanceState) {
+        super.onActivityCreated(savedInstanceState);
+        Log.d(LOG_TAG, "onActivityCreated");
+        if (button == null) {
+            Log.d(LOG_TAG, "Button is null");
+            return;
+        }
+        final ColorStateList pink = getActivity().getResources().getColorStateList(R.color.pink);
+        final ColorStateList white = getActivity().getResources().getColorStateList(R.color.offwhite);
+
+        button.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                if (favorite) {
+                    executor.execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            mDatabase.movieDao().delete(title);
+                        }
+                    });
+                    favorite = false;
+                    button.setBackgroundTintList(white);
+                    Toast.makeText(getActivity(), getResources().getText(R.string.removed_favorites), Toast.LENGTH_SHORT).show();
+                } else {
+                    executor.execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            mDatabase.movieDao().insert(title);
+                        }
+                    });
+                    favorite = true;
+                    button.setBackgroundTintList(pink);
+                    Toast.makeText(getActivity(), getResources().getText(R.string.saved_favorites), Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+
+
+        executor.execute(new Runnable() {
+            @Override
+            public void run() {
+                MovieTitle dbTitle = mDatabase.movieDao().getMovieById(title.id);
+                if (dbTitle != null) {
+                    favorite = true;
+                    button.setBackgroundTintList(pink);
+                } else {
+                    favorite = false;
+                    button.setBackgroundTintList(white);
+                }
+            }
+        });
+    }
 
     @Override
     public void onAttach(Context context) {
