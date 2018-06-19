@@ -8,14 +8,14 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.View;
 
-public class MovieDetailActivity extends AppCompatActivity implements MovieDetailFragment.OnFragmentInteractionListener{
+public class DetailsReviewActivity extends AppCompatActivity implements DetailsReviewFragment.OnFragmentInteractionListener{
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_movie_detail);
-        if(savedInstanceState==null || getFragmentManager().findFragmentById(R.id.detail_page)==null) {
-            getSupportFragmentManager().beginTransaction().replace(R.id.detail_page, new MovieDetailFragment())
+        setContentView(R.layout.activity_details_review);
+        if(savedInstanceState==null || getFragmentManager().findFragmentById(R.id.review_details_page)==null) {
+            getSupportFragmentManager().beginTransaction().replace(R.id.review_details_page, new DetailsReviewFragment())
                     .commit();
         }
     }
@@ -24,4 +24,5 @@ public class MovieDetailActivity extends AppCompatActivity implements MovieDetai
     public void onFragmentInteraction(Uri uri) {
 
     }
+
 }

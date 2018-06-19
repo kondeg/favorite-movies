@@ -4,19 +4,42 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.GridView;
 import android.widget.ImageView;
+import android.widget.ListAdapter;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import com.android.volley.Request;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.Volley;
 import com.squareup.picasso.Picasso;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
+import java.util.concurrent.Executor;
+
+import edu.udacity.kondeg.movies.database.MovieDatabase;
+import edu.udacity.kondeg.movies.database.MovieExecutor;
+import edu.udacity.kondeg.movies.util.EndpointParams;
 
 
 /**
@@ -37,6 +60,16 @@ public class MovieDetailFragment extends Fragment {
     // TODO: Rename and change types of parameters
     private String mParam1;
     private String mParam2;
+    private MovieTitle title = null;
+    private List<MovieTrailer> trailers = null;
+    private List<MovieReview> reviews = null;
+    private ArrayAdapter<MovieTrailer> mMovieTrailerAdapter = null;
+    private ArrayAdapter<MovieReview> mMovieReviewAdapter = null;
+    private GridView movieTrailerView = null;
+    private GridView movieReviewView = null;
+    private Executor executor = null;
+    Boolean favorite = false;
+    private MovieDatabase mDatabase;
 
     private OnFragmentInteractionListener mListener;
 
@@ -69,6 +102,8 @@ public class MovieDetailFragment extends Fragment {
             mParam1 = getArguments().getString(ARG_PARAM1);
             mParam2 = getArguments().getString(ARG_PARAM2);
         }
+        executor = new MovieExecutor();
+        mDatabase = MovieDatabase.getDatabase(getActivity());
     }
 
     @Override
@@ -77,7 +112,7 @@ public class MovieDetailFragment extends Fragment {
         setHasOptionsMenu(false);
         View view = inflater.inflate(R.layout.fragment_movie_detail, container, false);
         Intent intent = getActivity().getIntent();
-        MovieTitle title = null;
+
         if (intent!=null && intent.hasExtra(getResources().getString(R.string.parcel_movie))) {
             title = intent.getParcelableExtra(getResources().getString(R.string.parcel_movie));
         }
@@ -92,16 +127,98 @@ public class MovieDetailFragment extends Fragment {
             titleTextView.setText(title.title);
 
             TextView releaseDateTextView = (TextView) view.findViewById(R.id.release_date);
-            releaseDateTextView.setText("Release Date: " +  title.releaseDate);
+            releaseDateTextView.setText(title.releaseDate);
 
             // Set the rating of the movie in the TextView
             TextView voteAverageTextView = (TextView) view.findViewById(R.id.movie_rating);
-            voteAverageTextView.setText("Rating: " + Double.toString(title.voteAverage));
+            voteAverageTextView.setText(Double.toString(title.voteAverage));
 
             // Set the synopsis of the movie in the TextView
             TextView overviewTextView = (TextView) view.findViewById(R.id.plot);
-            overviewTextView.setText("Overview: \n\n" + title.overview);
+            overviewTextView.setText(title.overview);
 
+            trailers = new ArrayList<>();
+
+            reviews = new ArrayList<>();
+
+            queryMovieTrailerApi();
+
+            mMovieTrailerAdapter = new MovieTrailerAdapter(getActivity(), trailers);
+
+            movieTrailerView = (GridView) view.findViewById(R.id.movie_trailers_grid);
+
+            movieTrailerView.setAdapter(mMovieTrailerAdapter);
+
+            movieTrailerView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                @Override
+                public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                    MovieTrailer movieTitle = (MovieTrailer) parent.getItemAtPosition(position);
+                    startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("http://www.youtube.com/watch?v=" + movieTitle.getTrailerId())));
+                }
+            });
+
+            queryMovieReviewApi();
+
+            mMovieReviewAdapter = new MovieReviewAdapter(getActivity(), reviews);
+
+            movieReviewView = (GridView) view.findViewById(R.id.movie_review_grid);
+
+            movieReviewView.setAdapter(mMovieReviewAdapter);
+
+            movieReviewView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                @Override
+                public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                    MovieReview movieReview = (MovieReview) parent.getItemAtPosition(position);
+                    Intent intent = new Intent(getActivity(), DetailsReviewActivity.class);
+                    Bundle extras = new Bundle();
+                    extras.putString(getResources().getString(R.string.review_title),title.title);
+                    extras.putString(getResources().getString(R.string.review_author),movieReview.getAuthor());
+                    extras.putString(getResources().getString(R.string.review_content), movieReview.getContent());
+                    intent.putExtras(extras);
+                    startActivity(intent);
+                }
+            });
+
+            final FloatingActionButton button = (FloatingActionButton) view.findViewById(R.id.favbtn);
+            button.setOnClickListener(new View.OnClickListener() {
+                public void onClick(View v) {
+                    if (favorite) {
+                        executor.execute(new Runnable() {
+                            @Override
+                            public void run() {
+                                mDatabase.movieDao().delete(title);
+                            }
+                        });
+                        favorite = false;
+                        button.setBackgroundTintList(getContext().getResources().getColorStateList(R.color.offwhite));
+                        Toast.makeText(getActivity(), getResources().getText(R.string.removed_favorites), Toast.LENGTH_SHORT).show();
+                    } else {
+                        executor.execute(new Runnable() {
+                            @Override
+                            public void run() {
+                                mDatabase.movieDao().insert(title);
+                            }
+                        });
+                        favorite = true;
+                        button.setBackgroundTintList(getContext().getResources().getColorStateList(R.color.pink));
+                        Toast.makeText(getActivity(), getResources().getText(R.string.saved_favorites), Toast.LENGTH_SHORT).show();
+                    }
+                }
+            });
+
+            executor.execute(new Runnable() {
+                @Override
+                public void run() {
+                    MovieTitle dbTitle = mDatabase.movieDao().getMovieById(title.id);
+                    if (dbTitle != null) {
+                        favorite = true;
+                        button.setBackgroundTintList(getContext().getResources().getColorStateList(R.color.pink));
+                    } else {
+                        favorite = false;
+                        button.setBackgroundTintList(getContext().getResources().getColorStateList(R.color.offwhite));
+                    }
+                }
+            });
         }
 
         return view;
@@ -139,4 +256,82 @@ public class MovieDetailFragment extends Fragment {
         // TODO: Update argument type and name
         void onFragmentInteraction(Uri uri);
     }
+
+
+
+    private void queryMovieTrailerApi() {
+        String apiUri = EndpointParams.MOVIE_API_BASE_URL + title.id + EndpointParams.MOVIE_API_TRAILERS;
+        final JsonObjectRequest mJsonObjectRequest = new JsonObjectRequest
+                (Request.Method.GET, apiUri + EndpointParams.API_KEY, null, new Response.Listener<JSONObject>() {
+                    @Override
+                    public void onResponse(JSONObject response) {
+                        try {
+                            JSONArray jsonArray = response.getJSONArray("results");
+                            String id;
+                            String name;
+                            trailers.clear();
+                            // TODO: Loop through the array
+                            for (int i = 0; i < jsonArray.length(); i++) {
+                                JSONObject movie = jsonArray.getJSONObject(i);
+                                id = movie.getString("key");
+                                name = movie.getString("name");
+                                trailers.add(new MovieTrailer(name, id));
+                            }
+                            mMovieTrailerAdapter.notifyDataSetChanged();
+
+                        } catch (JSONException ex) {
+                            Log.e(LOG_TAG, ex.getMessage());
+                        }
+                    }
+                }, new Response.ErrorListener() {
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+                        error.printStackTrace();
+                        Log.i(LOG_TAG, error.getMessage());
+                    }
+                });
+
+        // Queue the async request
+        Volley.newRequestQueue(getActivity().getApplicationContext()).add(mJsonObjectRequest);
+    }
+
+
+    private void queryMovieReviewApi() {
+        String apiUri = EndpointParams.MOVIE_API_BASE_URL + title.id + EndpointParams.MOVIE_API_REVIEWS;
+        final JsonObjectRequest mJsonObjectRequest = new JsonObjectRequest
+                (Request.Method.GET, apiUri + EndpointParams.API_KEY, null, new Response.Listener<JSONObject>() {
+                    @Override
+                    public void onResponse(JSONObject response) {
+                        try {
+                            JSONArray jsonArray = response.getJSONArray("results");
+                            String id;
+                            String author;
+                            String content;
+                            reviews.clear();
+                            // TODO: Loop through the array
+                            for (int i = 0; i < jsonArray.length(); i++) {
+                                JSONObject review = jsonArray.getJSONObject(i);
+                                id = review.getString("id");
+                                author = review.getString("author");
+                                content = review.getString("content");
+                                reviews.add(new MovieReview(id,author,content));
+                            }
+                            mMovieReviewAdapter.notifyDataSetChanged();
+
+                        } catch (JSONException ex) {
+                            Log.e(LOG_TAG, ex.getMessage());
+                        }
+                    }
+                }, new Response.ErrorListener() {
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+                        error.printStackTrace();
+                        Log.i(LOG_TAG, error.getMessage());
+                    }
+                });
+
+        // Queue the async request
+        Volley.newRequestQueue(getActivity().getApplicationContext()).add(mJsonObjectRequest);
+    }
+
 }

@@ -6,9 +6,26 @@
     <string name="image_view_description">Movie image</string>
     <string name="show_by_popularity">Sort By Popularity</string>
     <string name="show_by_rating">Sort By Rating</string>
+    <string name="show_by_favorites">Show Favorites</string>
     <string name="title_activity_movie_detail">MovieDetailActivity</string>
     <string name="parcel_movie">movieParcel</string>
+    <string name="fragmentMovie">fragmentMovie</string>
+    <string name="movieList">movieList</string>
+    <string name="trailers">Trailers:</string>
+    <string name="overview">Overview:</string>
+    <string name="reviews">Reviews:</string>
+    <string name="review">Review:</string>
+    <string name="rating">Rating:</string>
+    <string name="author">Author:</string>
+    <string name="favorite_tooltip">Mark As Favorite</string>
+    <string name="release_date">Release Date:</string>
+    <string name="saved_favorites">Saved to Favorites</string>
+    <string name="removed_favorites">Removed from Favorites</string>
 
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="title_activity_details_review">DetailsReviewActivity</string>
+    <string name="review_author">review_author</string>
+    <string name="review_title">review_title</string>
+    <string name="review_content">review_content</string>
 </resources>

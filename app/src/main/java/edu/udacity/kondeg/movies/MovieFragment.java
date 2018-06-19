@@ -1,10 +1,13 @@
 package edu.udacity.kondeg.movies;
 
 import android.app.Activity;
+import android.arch.lifecycle.LiveData;
+import android.arch.lifecycle.Observer;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -16,21 +19,20 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.GridView;
-import android.widget.Toast;
-
 import com.android.volley.Request;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.List;
+import edu.udacity.kondeg.movies.database.MovieDatabase;
+import edu.udacity.kondeg.movies.util.EndpointParams;
 
 
 /**
@@ -48,17 +50,15 @@ public class MovieFragment extends Fragment {
     private static final String ARG_PARAM2 = "param2";
     private static final String SORT_POPULAR = "popular";
     private static final String SORT_TOP = "top";
+    private static final String SORT_FAVORITES = "favorites";
     private static final String LOG_TAG = MovieFragment.class.getSimpleName();
 
     // TODO: Rename and change types of parameters
     private String mParam1;
     private String mParam2;
 
-    private static final String API_KEY = "?api_key=";
-    private static final String MOVIE_IMAGE_URI = "http://image.tmdb.org/t/p/";
-    private static final String MOVIE_API_URI_POPULAR = "http://api.themoviedb.org/3/movie/popular" ;
-    private static final String MOVIE_API_URI_TOP = "http://api.themoviedb.org/3/movie/top_rated";
-    private String sortOrder = SORT_POPULAR;
+
+    private String sortOrder = null;
 
     private Activity mActivity;
     private GridView mGridView;
@@ -104,6 +104,7 @@ public class MovieFragment extends Fragment {
             mParam1 = getArguments().getString(ARG_PARAM1);
             mParam2 = getArguments().getString(ARG_PARAM2);
         }
+        setRetainInstance(true);
     }
 
 
@@ -122,7 +123,13 @@ public class MovieFragment extends Fragment {
                 movieTitles = new ArrayList<>();
             }
 
-            queryMovieDbApi();
+            if (savedInstanceState!=null && savedInstanceState.getParcelableArrayList(getResources().getString(R.string.movieList))!=null) {
+                movieTitles = savedInstanceState.getParcelableArrayList(getResources().getString(R.string.movieList));
+                Log.d(LOG_TAG, "restore instance state fragment"+movieTitles.size());
+            } else {
+                Log.d(LOG_TAG, "new instance state fragment");
+                queryMovieDbApi();
+            }
 
             mMovieAdapter = new MovieAdapter(getActivity(), movieTitles);
 
@@ -198,26 +205,51 @@ public class MovieFragment extends Fragment {
                 queryMovieDbApi();
                 notifySortOrderChanged(SORT_POPULAR);
                 return true;
-
             case R.id.show_by_rating:
                 sortOrder = SORT_TOP;
                 queryMovieDbApi();
                 notifySortOrderChanged(SORT_TOP);
                 return true;
-
+            case R.id.show_by_favorites:
+                sortOrder = SORT_FAVORITES;
+                queryFavoriteDbApi();
             default:
                 return super.onOptionsItemSelected(item);
         }
     }
 
+    private void queryFavoriteDbApi() {
+        final MovieDatabase database = MovieDatabase.getDatabase(getActivity());
+        final LiveData<List<MovieTitle>> movieTitlesData = database.movieDao().getAll();
+        movieTitlesData.observe(getActivity(), new Observer<List<MovieTitle>>() {
+            @Override
+            public void onChanged(@Nullable List<MovieTitle> movieTitleData) {
+                if (movieTitles==null) {
+                    movieTitles = new ArrayList<>();
+                } else {
+                    movieTitles.clear();
+                }
+                movieTitles.addAll(movieTitleData);
+                mMovieAdapter.notifyDataSetChanged();
+            }
+        });
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle savedInstanceState) {
+        Log.d(LOG_TAG, "save instance state fragment");
+        savedInstanceState.putParcelableArrayList(getResources().getString(R.string.movieList),movieTitles);
+        super.onSaveInstanceState(savedInstanceState);
+    }
+
 
     private void queryMovieDbApi() {
-        String apiUri = MOVIE_API_URI_POPULAR;
+        String apiUri = EndpointParams.MOVIE_API_URI_POPULAR;
         if (sortOrder!=null && sortOrder.equals(SORT_TOP)) {
-            apiUri = MOVIE_API_URI_TOP;
+            apiUri = EndpointParams.MOVIE_API_URI_TOP;
         }
         final JsonObjectRequest mJsonObjectRequest = new JsonObjectRequest
-                (Request.Method.GET, apiUri+API_KEY, null, new Response.Listener<JSONObject>() {
+                (Request.Method.GET, apiUri+EndpointParams.API_KEY, null, new Response.Listener<JSONObject>() {
                     @Override
                     public void onResponse(JSONObject response) {
                         try {
@@ -255,7 +287,7 @@ public class MovieFragment extends Fragment {
                                         Log.e(LOG_TAG, e.getMessage());
                                     }
                                 }
-                                thumbnail = MOVIE_IMAGE_URI+mScreenDensity+poster_uri;
+                                thumbnail = EndpointParams.MOVIE_IMAGE_URI+mScreenDensity+poster_uri;
                                 movieTitles.add(new MovieTitle(title, releaseDate, id, thumbnail, overview, rating));
                             }
                             mMovieAdapter.notifyDataSetChanged();
@@ -275,5 +307,9 @@ public class MovieFragment extends Fragment {
         // Queue the async request
         Volley.newRequestQueue(getActivity().getApplicationContext()).add(mJsonObjectRequest);
     }
+
+
+
+
 
 }

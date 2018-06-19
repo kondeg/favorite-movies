@@ -1,5 +1,6 @@
 package edu.udacity.kondeg.movies;
 
+import android.app.Fragment;
 import android.net.Uri;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -11,13 +12,23 @@ MovieFragment.OnChangeSortOrderListener{
 
     private static final String LOG_TAG = MovieActivity.class.getSimpleName();
 
+    private String sortOrder = null;
+
+    private android.support.v4.app.Fragment mContent;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_movie);
-        if(getFragmentManager().findFragmentById(R.id.landing_page)==null) {
-            getSupportFragmentManager().beginTransaction().replace(R.id.landing_page, new MovieFragment())
+        if((savedInstanceState==null)) {
+            Log.d(LOG_TAG, "new fragment");
+            mContent = new MovieFragment();
+            getSupportFragmentManager().beginTransaction().replace(R.id.landing_page, mContent)
             .commit();
+        } else {
+            Log.d(LOG_TAG, "replace fragment");
+            mContent = getSupportFragmentManager().getFragment(savedInstanceState, getResources().getString(R.string.fragmentMovie));
+            getSupportFragmentManager().beginTransaction().replace(R.id.landing_page, mContent);
         }
     }
 
@@ -33,7 +44,16 @@ MovieFragment.OnChangeSortOrderListener{
     }
 
     @Override
+    public void onSaveInstanceState(Bundle savedInstanceState) {
+        Log.d(LOG_TAG, "save instance state activity "+(mContent==null));
+        getSupportFragmentManager().putFragment(savedInstanceState, getResources().getString(R.string.fragmentMovie), mContent);
+        super.onSaveInstanceState(savedInstanceState);
+    }
+
+
+    @Override
     public void onSortOrderChanged(String sortOrder) {
         Log.d(LOG_TAG, "Sort order changed "+sortOrder);
+        this.sortOrder = sortOrder;
     }
 }

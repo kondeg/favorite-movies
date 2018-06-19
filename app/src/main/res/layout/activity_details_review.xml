@@ -4,6 +4,7 @@
 xmlns:tools="http://schemas.android.com/tools"
 android:layout_width="match_parent"
 android:layout_height="match_parent"
-android:id="@+id/landing_page"
-tools:layout="@layout/fragment_movie"
-tools:context="edu.udacity.kondeg.movies.MovieActivity" />
+android:id="@+id/review_details_page"
+tools:layout="@layout/fragment_movie_detail"
+tools:context="edu.udacity.kondeg.movies.DetailsReviewActivity"
+    />
