@@ -2,7 +2,7 @@ package edu.udacity.kondeg.movies.util;
 
 public class EndpointParams {
 
-    public static final String API_KEY = "?api_key=738e339677ca170170d0bec66adf566a";
+    public static final String API_KEY = "?api_key=";
     public static final String MOVIE_IMAGE_URI = "http://image.tmdb.org/t/p/";
     public static final String MOVIE_API_URI_POPULAR = "http://api.themoviedb.org/3/movie/popular" ;
     public static final String MOVIE_API_URI_TOP = "http://api.themoviedb.org/3/movie/top_rated";
